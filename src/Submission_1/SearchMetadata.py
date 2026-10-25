@@ -53,3 +53,66 @@ Notes:
     - Els operadors lògics NO modifiquen les llistes originals
     - Aquests mètodes NO retornen objectes Gallery, sinó llistes simples
 """
+
+
+#import cfg
+class SearchMetadata:
+    __slots__ = ['_metadata']
+
+    def __init__(self, metadata=None):
+        if hasattr(metadata, "_data"):
+            self._metadata = metadata._data
+        elif isinstance(metadata, dict):
+            self._metadata = metadata
+        else:
+            self._metadata = {}
+
+    def _search(self, field: str, sub) -> list:
+        if sub is None:
+            return []
+        sub_str = str(sub)
+        if sub_str == "":
+            return []
+
+        results = []
+        for uuid, data in self._metadata.items():
+            if not isinstance(data, dict):
+                continue
+            value = str(data.get(field, ""))
+            if sub_str in value:
+                results.append(uuid)
+        return sorted(results)
+
+    def prompt(self, sub) -> list:
+        return self._search("prompt", sub)
+
+    def model(self, sub) -> list:
+        return self._search("model", sub)
+
+    def seed(self, sub) -> list:
+        return self._search("seed", sub)
+
+    def cfg_scale(self, sub) -> list:
+        return self._search("cfg_scale", sub)
+
+    def steps(self, sub) -> list:
+        return self._search("steps", sub)
+
+    def sampler(self, sub) -> list:
+        return self._search("sampler", sub)
+
+    def date(self, sub) -> list:
+
+        return self._search("created", sub)
+
+    def and_operator(self, list1, list2):
+        return sorted(set(list1) & set(list2))
+
+    def or_operator(self, list1, list2):
+        return sorted(set(list1) | set(list2))
+
+    def __len__(self):
+        return len(self._metadata)
+
+    def __str__(self):
+        return f"SearchMetadata: {len(self._metadata)} metadata elements."

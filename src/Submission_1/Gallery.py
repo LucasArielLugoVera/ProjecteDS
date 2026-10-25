@@ -48,3 +48,83 @@ Notes:
     - Podeu tenir múltiples galeries actives simultàniament
     - Les operacions d'afegir/eliminar són ràpides (no busquen a la llista)
 """
+
+# -*- coding: utf-8 -*-
+import json
+import os
+try:
+    import cfg
+except ImportError:
+    cfg = None
+
+
+class Gallery:
+    __slots__ = ['_name', '_description', '_created', '_uuids', '_image_id', '_image_viewer']
+
+    def __init__(self, image_id, image_viewer):
+        self._name = ""
+        self._description = ""
+        self._created = ""
+        self._uuids = []
+        self._image_id = image_id
+        self._image_viewer = image_viewer
+
+    def load_file(self, file: str) -> None:
+        """Carga una galería desde un archivo JSON."""
+        self._uuids.clear()
+
+        if not os.path.isfile(file):
+            return
+
+        try:
+            with open(file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            return
+
+        self._name = data.get("gallery_name", "Unnamed Gallery")
+        self._description = data.get("description", "No description")
+        self._created = data.get("created_date", "Unknown date")
+
+        for path in data.get("images", []):
+            # normalizar path
+            if cfg and hasattr(cfg, "get_canonical_pathfile"):
+                try:
+                    path = cfg.get_canonical_pathfile(path)
+                except Exception:
+                    path = os.path.normpath(os.path.abspath(path))
+            else:
+                path = os.path.normpath(os.path.abspath(path))
+
+            uuid = self._image_id.get_uuid(path)
+            if uuid:
+                self._uuids.append(uuid)
+
+    def show(self) -> None:
+        if not self._uuids:
+            print("[INFO] Gallery is empty.")
+            return
+
+        print(f"\n=== Gallery: {self._name} ===")
+        print(f"Description: {self._description}")
+        print(f"Created: {self._created}\n")
+
+        for uid in self._uuids:
+            self._image_viewer.show_image(uid, mode=1)
+
+    def add_image_at_end(self, uuid: str) -> None:
+        self._uuids.append(uuid)
+
+    def remove_first_image(self) -> None:
+        if self._uuids:
+            self._uuids.pop(0)
+
+    def remove_last_image(self) -> None:
+        if self._uuids:
+            self._uuids.pop()
+
+    def __len__(self):
+        return len(self._uuids)
+
+    def __str__(self):
+        return f"Gallery({self._name}): {len(self._uuids)} images"
